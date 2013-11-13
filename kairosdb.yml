@@ -1,0 +1,117 @@
+telnetserver:
+  enabled: true
+  port: 4242
+  #module: org.kairosdb.core.telnet.TelnetServerModule
+
+reporter:
+  # Uses Quartz Cron syntax - default is to run every minute
+  enabled: true
+  schedule: 0 */1 * * * ?
+  #module: org.kairosdb.core.reporting.MetricReportingModule
+
+service:
+  datastore: org.kairosdb.datastore.cassandra.CassandraModule
+  #datastore: org.kairosdb.datastore.remote.RemoteModule
+  #datastore: org.kairosdb.datastore.h2.H2Module
+
+  oauth:
+    enabled: false
+    #module: org.kairosdb.core.oauth.OAuthModule
+    consumer:
+      key:
+      secret:
+
+query_cache:
+  # Cache file cleaning schedule. Uses Quartz Cron syntax
+  file_cleaner_schedule: 0 0 12 ? * SUN *
+
+  # By default the query cache is located in kairos_cache under the system temp
+  # folder as defined by java.io.tmpdir system property.  To override set the
+  # following value
+  cache_dir:
+
+datastore:
+  concurrentQueryThreads: 5
+
+  h2:
+    database_path: build/h2db
+
+  cassandra:
+    #host list is in the form> 1.1.1.1:9160,1.1.1.2:9160
+    host_list: localhost:9160
+    replication_factor: 1
+    write_delay: 1000
+    write_buffer_max_size: 500000
+    # When reading one row read in 10k
+    single_row_read_size: 10240
+
+    # The number of rows to read when doing a multi get
+    multi_row_size: 1000
+    # The amount of data to read from each row when doing a multi get
+    multi_row_read_size: 1024
+
+    # Uses Quartz Cron syntax - default is to run every five minutes
+    increase_buffer_size_schedule: 0 */5 * * * ?
+
+    # for cassandra authentication use the following
+    auth:
+      username: admin
+      password: ou812!!
+
+  hbase:
+    timeseries_table: tsdb
+    uinqueids_table: tsdb-uid
+    zoo_keeper_quorum: localhost
+    zoo_keeper_base_dir: 
+    auto_create_metrics: true
+
+  remote:
+    # Location to store data locally before it is sent off
+    data_dir: /tmp
+    remote_url: http://10.92.1.41:8080
+    # quartz cron schedule for sending data (currently set to 30 min)
+    schedule: 0 */30 * * * ?
+
+# use the simple server factory if you only want to run on a single port
+#server:
+#  type: simple
+#  connector:
+#    type: http
+#    port: 8080
+
+server:
+#  softNofileLimit: 1000
+#  hardNofileLimit: 1000
+  applicationConnectors:
+    - type: http
+      port: 8080
+    - type: https
+      port: 8443
+      keyStorePath: kairosdb.keystore
+      keyStorePassword: example
+      validateCerts: false
+  adminConnectors:
+    - type: http
+      port: 8081
+    - type: https
+      port: 8444
+      keyStorePath: example.keystore
+      keyStorePassword: example
+      validateCerts: false
+
+# Logging settings.
+logging:
+
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+
+  # Logger-specific levels.
+  loggers:
+
+    # Sets the level for 'com.example.app' to DEBUG.
+    com.example.app: DEBUG
+
+    org.hibernate.SQL: ALL
+
+  appenders:
+    - type: console
