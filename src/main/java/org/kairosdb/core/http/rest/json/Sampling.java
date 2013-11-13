@@ -19,9 +19,9 @@ package org.kairosdb.core.http.rest.json;
 
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.core.http.rest.validation.TimeUnitRequired;
-import org.apache.bval.constraints.NotEmpty;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
+import org.hibernate.validator.constraints.NotEmpty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;

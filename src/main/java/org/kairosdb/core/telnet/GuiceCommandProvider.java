@@ -31,6 +31,7 @@ public class GuiceCommandProvider implements CommandProvider
 	private Map<String, TelnetCommand> m_commandMap = new HashMap<String, TelnetCommand>();
 
 	@Inject
+  @SuppressWarnings("unchecked")
 	public GuiceCommandProvider(Injector injector)
 	{
 		Map<Key<?>, Binding<?>> bindings = injector.getAllBindings();

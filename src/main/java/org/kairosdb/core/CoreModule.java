@@ -20,6 +20,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import org.kairosdb.core.KairosDBConfiguration;
 import org.kairosdb.core.aggregator.*;
 import org.kairosdb.core.datastore.KairosDatastore;
 import org.kairosdb.core.datastore.QueryQueuingManager;
@@ -33,49 +34,38 @@ import org.kairosdb.util.Util;
 import java.util.List;
 import java.util.Properties;
 
+
 public class CoreModule extends AbstractModule
 {
-	private Properties m_props;
+  @SuppressWarnings("unchecked")
+  @Override
+  protected void configure()
+  {
+    bind(QueryQueuingManager.class).in(Singleton.class);
+    bind(KairosDatastore.class).in(Singleton.class);
+    bind(AggregatorFactory.class).to(GuiceAggregatorFactory.class).in(Singleton.class);
+    bind(GroupByFactory.class).to(GuiceGroupByFactory.class).in(Singleton.class);
+    bind(GsonParser.class).in(Singleton.class);
+    bind(CacheFileCleaner.class).in(Singleton.class);
+    bind(KairosDBScheduler.class).in(Singleton.class);
+    bind(MemoryMonitor.class).in(Singleton.class);
 
-	public CoreModule(Properties props)
-	{
-		m_props = props;
-	}
+    bind(SumAggregator.class);
+    bind(MinAggregator.class);
+    bind(MaxAggregator.class);
+    bind(AvgAggregator.class);
+    bind(StdAggregator.class);
+    bind(RateAggregator.class);
+    bind(LeastSquaresAggregator.class);
+    bind(PercentileAggregator.class);
+    bind(DivideAggregator.class);
+    bind(ScaleAggregator.class);
+    bind(CountAggregator.class);
 
-	@SuppressWarnings("unchecked")
-	@Override
-	protected void configure()
-	{
-		bind(QueryQueuingManager.class).in(Singleton.class);
-		bind(KairosDatastore.class).in(Singleton.class);
-		bind(AggregatorFactory.class).to(GuiceAggregatorFactory.class).in(Singleton.class);
-		bind(GroupByFactory.class).to(GuiceGroupByFactory.class).in(Singleton.class);
-		bind(GsonParser.class).in(Singleton.class);
-		bind(CacheFileCleaner.class).in(Singleton.class);
-		bind(KairosDBScheduler.class).in(Singleton.class);
-		bind(MemoryMonitor.class).in(Singleton.class);
+    bind(ValueGroupBy.class);
+    bind(TimeGroupBy.class);
+    bind(TagGroupBy.class);
 
-		bind(SumAggregator.class);
-		bind(MinAggregator.class);
-		bind(MaxAggregator.class);
-		bind(AvgAggregator.class);
-		bind(StdAggregator.class);
-		bind(RateAggregator.class);
-		bind(LeastSquaresAggregator.class);
-		bind(PercentileAggregator.class);
-		bind(DivideAggregator.class);
-		bind(ScaleAggregator.class);
-		bind(CountAggregator.class);
-
-		bind(ValueGroupBy.class);
-		bind(TimeGroupBy.class);
-		bind(TagGroupBy.class);
-
-		Names.bindProperties(binder(), m_props);
-
-		String hostname = m_props.getProperty("kairosdb.hostname");
-		bindConstant().annotatedWith(Names.named("HOSTNAME")).to(hostname != null ? hostname: Util.getHostName());
-
-		bind(new TypeLiteral<List<DataPointListener>>(){}).toProvider(DataPointListenerProvider.class);
-	}
+    bind(new TypeLiteral<List<DataPointListener>>(){}).toProvider(DataPointListenerProvider.class);
+  }
 }

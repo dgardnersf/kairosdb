@@ -25,6 +25,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.groupby.ValueGroupBy;
 import org.kairosdb.testing.ListDataPointGroup;
+import org.kairosdb.core.formatter.FormatterException;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -41,7 +42,7 @@ public class JsonResponseTest
 	private JsonResponse response;
 
 	@Before
-	public void setup()
+	public void setup() throws FormatterException
 	{
 		writer = new StringWriter();
 		response = new JsonResponse(writer);

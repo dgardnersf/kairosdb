@@ -16,10 +16,10 @@
 
 package org.kairosdb.core.http.rest.json;
 
-import org.apache.bval.constraints.NotEmpty;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.annotate.JsonDeserialize;
+import org.hibernate.validator.constraints.NotEmpty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;

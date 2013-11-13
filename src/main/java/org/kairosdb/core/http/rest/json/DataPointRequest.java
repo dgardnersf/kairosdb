@@ -16,7 +16,7 @@
 
 package org.kairosdb.core.http.rest.json;
 
-import org.apache.bval.constraints.NotEmpty;
+import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;

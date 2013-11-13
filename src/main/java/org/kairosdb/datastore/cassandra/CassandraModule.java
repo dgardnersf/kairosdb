@@ -22,34 +22,15 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import org.kairosdb.core.datastore.Datastore;
 import org.kairosdb.core.datastore.KairosDatastore;
+import org.kairosdb.core.KairosDBConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 public class CassandraModule extends AbstractModule
 {
 	public static final String CASSANDRA_AUTH_MAP = "cassandra.auth.map";
 	public static final String AUTH_PREFIX = "kairosdb.datastore.cassandra.auth.";
-
-	private Map<String, String> m_authMap = new HashMap<String, String>();
-
-	public CassandraModule(Properties props)
-	{
-		for (Object key : props.keySet())
-		{
-			String strKey = (String)key;
-
-			if (strKey.startsWith(AUTH_PREFIX))
-			{
-				String consumerKey = strKey.substring(AUTH_PREFIX.length());
-				String consumerToken = (String)props.get(key);
-
-				m_authMap.put(consumerKey, consumerToken);
-			}
-		}
-	}
-
 
 	@Override
 	protected void configure()
@@ -57,8 +38,5 @@ public class CassandraModule extends AbstractModule
 		bind(Datastore.class).to(CassandraDatastore.class).in(Scopes.SINGLETON);
 		bind(CassandraDatastore.class).in(Scopes.SINGLETON);
 		bind(IncreaseMaxBufferSizesJob.class).in(Scopes.SINGLETON);
-
-		bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(Names.named(CASSANDRA_AUTH_MAP))
-				.toInstance(m_authMap);
 	}
 }

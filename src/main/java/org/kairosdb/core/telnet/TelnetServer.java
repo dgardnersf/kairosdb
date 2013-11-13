@@ -16,6 +16,8 @@
 
 package org.kairosdb.core.telnet;
 
+import io.dropwizard.lifecycle.Managed;
+
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -34,7 +36,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
 public class TelnetServer extends SimpleChannelUpstreamHandler implements ChannelPipelineFactory,
-		KairosDBService
+		KairosDBService, Managed
 {
 	public static final Logger logger = LoggerFactory.getLogger(TelnetServer.class);
 

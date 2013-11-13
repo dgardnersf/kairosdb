@@ -16,8 +16,10 @@
 
 package org.kairosdb.core.formatter;
 
-import org.json.JSONException;
-import org.json.JSONWriter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.groupby.GroupByResult;
@@ -29,25 +31,37 @@ import java.util.List;
 public class JsonResponse
 {
 	private Writer m_writer;
-	private JSONWriter m_jsonWriter;
+	private JsonGenerator m_jsonWriter;
 
-	public JsonResponse(Writer writer)
+	public JsonResponse(Writer writer) throws FormatterException
 	{
 		m_writer = writer;
-		m_jsonWriter = new JSONWriter(writer);
+    try 
+    {
+      m_jsonWriter = new JsonFactory().createGenerator(writer);
+    }
+    catch (IOException e) 
+    {
+			throw new FormatterException(e);
+    }
 	}
 
 	public void begin() throws FormatterException
 	{
 		try
 		{
-			m_jsonWriter.object();
-			m_jsonWriter.key("queries").array();
+			m_jsonWriter.writeStartObject();
+			m_jsonWriter.writeFieldName("queries");
+      m_jsonWriter.writeStartArray();
 		}
-		catch (JSONException e)
+		catch (JsonGenerationException e)
 		{
 			throw new FormatterException(e);
 		}
+    catch (IOException e) 
+    {
+			throw new FormatterException(e);
+    }
 	}
 
 	/**
@@ -62,24 +76,30 @@ public class JsonResponse
 	{
 		try
 		{
-			m_jsonWriter.object();
+			m_jsonWriter.writeStartObject();
 
 			if (sampleSize != -1)
-				m_jsonWriter.key("sample_size").value(sampleSize);
+      {
+        m_jsonWriter.writeFieldName("sample_size");
+        m_jsonWriter.writeNumber(sampleSize);
+      }
 
-			m_jsonWriter.key("results").array();
+			m_jsonWriter.writeFieldName("results");
+      m_jsonWriter.writeStartArray();
 
 			for (DataPointGroup group : queryResults)
 			{
 				final String metric = group.getName();
 
-				m_jsonWriter.object();
-				m_jsonWriter.key("name").value(metric);
+				m_jsonWriter.writeStartObject();
+				m_jsonWriter.writeFieldName("name");
+        m_jsonWriter.writeString(metric);
 
 				if (!group.getGroupByResult().isEmpty())
 				{
-					m_jsonWriter.key("group_by");
-					m_jsonWriter.array();
+					m_jsonWriter.writeFieldName("group_by");
+					m_jsonWriter.writeStartArray();
+					m_jsonWriter.flush(); // flush here because the Writer is accessed directly (below)
 					boolean first = true;
 					for (GroupByResult groupByResult : group.getGroupByResult())
 					{
@@ -88,30 +108,38 @@ public class JsonResponse
 						m_writer.write(groupByResult.toJson());
 						first = false;
 					}
-					m_jsonWriter.endArray();
+					m_jsonWriter.writeEndArray();
 				}
 
 				if (!excludeTags)
 				{
-					m_jsonWriter.key("tags").object();
+					m_jsonWriter.writeFieldName("tags");
+          m_jsonWriter.writeStartObject();
 
 					for (String tagName : group.getTagNames())
 					{
-						m_jsonWriter.key(tagName);
-						m_jsonWriter.value(group.getTagValues(tagName));
+						m_jsonWriter.writeFieldName(tagName);
+            m_jsonWriter.writeStartArray();
+            for (String tagValue : group.getTagValues(tagName)) 
+            {
+              m_jsonWriter.writeString(tagValue);
+            }
+            m_jsonWriter.writeEndArray();
 					}
-					m_jsonWriter.endObject();
+					m_jsonWriter.writeEndObject();
 				}
 
-				m_jsonWriter.key("values").array();
+				m_jsonWriter.writeFieldName("values");
+        m_jsonWriter.writeStartArray();
 				while (group.hasNext())
 				{
 					DataPoint dataPoint = group.next();
 
-					m_jsonWriter.array().value(dataPoint.getTimestamp());
+					m_jsonWriter.writeStartArray();
+          m_jsonWriter.writeNumber(dataPoint.getTimestamp());
 					if (dataPoint.isInteger())
 					{
-						m_jsonWriter.value(dataPoint.getLongValue());
+						m_jsonWriter.writeNumber(dataPoint.getLongValue());
 					}
 					else
 					{
@@ -120,17 +148,18 @@ public class JsonResponse
 						{
 							throw new IllegalStateException("NaN or Infinity:" + value + " data point=" + dataPoint);
 						}
-						m_jsonWriter.value(value);
+						m_jsonWriter.writeNumber(value);
 					}
-					m_jsonWriter.endArray();
+					m_jsonWriter.writeEndArray();
 				}
-				m_jsonWriter.endArray();
-				m_jsonWriter.endObject();
+				m_jsonWriter.writeEndArray();
+				m_jsonWriter.writeEndObject();
 			}
 
-			m_jsonWriter.endArray().endObject();
+			m_jsonWriter.writeEndArray();
+      m_jsonWriter.writeEndObject();
 		}
-		catch (JSONException e)
+		catch (JsonGenerationException e)
 		{
 			throw new FormatterException(e);
 		}
@@ -144,10 +173,15 @@ public class JsonResponse
 	{
 		try
 		{
-			m_jsonWriter.endArray();
-			m_jsonWriter.endObject();
+			m_jsonWriter.writeEndArray();
+			m_jsonWriter.writeEndObject();
+      m_jsonWriter.flush();
 		}
-		catch (JSONException e)
+		catch (JsonGenerationException e)
+		{
+			throw new FormatterException(e);
+		}
+		catch (IOException e)
 		{
 			throw new FormatterException(e);
 		}

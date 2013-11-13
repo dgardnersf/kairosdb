@@ -22,6 +22,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.DataPointListener;
 import org.kairosdb.core.DataPointSet;
@@ -42,6 +43,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
 
 
+@Ignore
 public class CassandraDatastoreTest extends DatastoreTestHelper
 {
 	public static final String ROW_KEY_TEST_METRIC = "row_key_test_metric";

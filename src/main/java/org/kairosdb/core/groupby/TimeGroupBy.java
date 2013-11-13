@@ -16,8 +16,10 @@
 
 package org.kairosdb.core.groupby;
 
-import org.json.JSONException;
-import org.json.JSONWriter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.aggregator.annotation.GroupByName;
 import org.kairosdb.core.datastore.Duration;
@@ -27,6 +29,7 @@ import org.kairosdb.core.formatter.FormatterException;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.io.StringWriter;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
@@ -45,6 +48,8 @@ public class TimeGroupBy implements GroupBy
 
 	private long startDate;
 	private Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+
+  private JsonFactory jsonFactory = new JsonFactory();
 
 
 	public TimeGroupBy()
@@ -116,25 +121,38 @@ public class TimeGroupBy implements GroupBy
 				StringWriter stringWriter = new StringWriter();
 				try
 				{
-					JSONWriter writer = new JSONWriter(stringWriter);
+					JsonGenerator writer = jsonFactory.createGenerator(stringWriter);
 
-					writer.object();
-					writer.key("name").value("time");
-					writer.key("range_size").object();
-					writer.key("value").value(rangeSize.getValue());
-					writer.key("unit").value(rangeSize.getUnit().toString());
-					writer.endObject();
-					writer.key("group_count").value(groupCount);
-					writer.key("group").object();
-					writer.key("group_number").value(id);
-					writer.endObject();
-					writer.endObject();
+          writer.writeStartObject();
+          writer.writeFieldName("name");
+          writer.writeString("time");
+          writer.writeFieldName("range_size");
+          writer.writeStartObject();
+          writer.writeFieldName("value");
+          writer.writeNumber(rangeSize.getValue());
+          writer.writeFieldName("unit");
+          writer.writeString(rangeSize.getUnit().toString());
+          writer.writeEndObject();
+          writer.writeFieldName("group_count");
+          writer.writeNumber(groupCount);
+          writer.writeFieldName("group");
+          writer.writeStartObject();
+          writer.writeFieldName("group_number");
+          writer.writeNumber(id);
+          writer.writeEndObject();
+          writer.writeEndObject();
+          writer.flush();
 				}
-				catch (JSONException e)
+				catch (JsonGenerationException e)
+				{
+					throw new FormatterException(e);
+				}
+				catch (IOException e)
 				{
 					throw new FormatterException(e);
 				}
 
+	
 				return stringWriter.toString();
 			}
 		};

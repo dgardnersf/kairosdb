@@ -15,13 +15,16 @@
  */
 package org.kairosdb.core.groupby;
 
-import org.json.JSONException;
-import org.json.JSONWriter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.aggregator.annotation.GroupByName;
 import org.kairosdb.core.formatter.FormatterException;
 
 import javax.validation.constraints.Min;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
@@ -67,22 +70,30 @@ public class ValueGroupBy implements GroupBy
 				StringWriter stringWriter = new StringWriter();
 				try
 				{
-					JSONWriter writer = new JSONWriter(stringWriter);
+					JsonGenerator writer = new JsonFactory().createGenerator(stringWriter);
 
-					writer.object();
-					writer.key("name").value("value");
-					writer.key("range_size").value(rangeSize);
+					writer.writeStartObject();
+					writer.writeFieldName("name");
+          writer.writeString("value");
+					writer.writeFieldName("range_size");
+          writer.writeNumber(rangeSize);
 
-					writer.key("group").object();
-					writer.key("group_number").value(id);
-					writer.endObject();
-					writer.endObject();
+					writer.writeFieldName("group");
+          writer.writeStartObject();
+					writer.writeFieldName("group_number");
+          writer.writeNumber(id);
+					writer.writeEndObject();
+					writer.writeEndObject();
+          writer.flush();
 				}
-				catch (JSONException e)
+				catch (JsonGenerationException e)
 				{
 					throw new FormatterException(e);
 				}
-
+				catch (IOException e)
+				{
+					throw new FormatterException(e);
+				}
 				return stringWriter.toString();
 			}
 		};

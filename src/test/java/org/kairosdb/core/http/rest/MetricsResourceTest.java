@@ -15,11 +15,15 @@
  */
 package org.kairosdb.core.http.rest;
 
+import io.dropwizard.testing.junit.ResourceTestRule;
+
 import ch.qos.logback.classic.Level;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.inject.*;
 import com.google.inject.name.Names;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,15 +37,12 @@ import org.kairosdb.core.datastore.*;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.groupby.GroupByFactory;
 import org.kairosdb.core.groupby.TestGroupByFactory;
-import org.kairosdb.core.http.WebServer;
-import org.kairosdb.core.http.WebServletModule;
 import org.kairosdb.core.http.rest.json.GsonParser;
-import org.kairosdb.testing.Client;
-import org.kairosdb.testing.JsonResponse;
+import com.sun.jersey.api.client.ClientResponse;
+
 import org.kairosdb.util.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
 import java.util.*;
@@ -55,64 +56,51 @@ public class MetricsResourceTest
 {
 	public static final Logger logger = LoggerFactory.getLogger(MetricsResourceTest.class);
 
-	private static final String ADD_METRIC_URL = "http://localhost:9001/api/v1/datapoints";
-	private static final String GET_METRIC_URL = "http://localhost:9001/api/v1/datapoints/query";
-	private static final String METRIC_NAMES_URL = "http://localhost:9001/api/v1/metricnames";
-	private static final String TAG_NAMES_URL = "http://localhost:9001/api/v1/tagnames";
-	private static final String TAG_VALUES_URL = "http://localhost:9001/api/v1/tagvalues";
+	private static final String ADD_METRIC_URL = "/api/v1/datapoints";
+	private static final String GET_METRIC_URL = "/api/v1/datapoints/query";
+	private static final String METRIC_NAMES_URL = "/api/v1/metricnames";
+	private static final String TAG_NAMES_URL = "/api/v1/tagnames";
+	private static final String TAG_VALUES_URL = "/api/v1/tagvalues";
 
 	private static TestDatastore datastore;
 	private static QueryQueuingManager queuingManager;
-	private static Client client;
-	private static WebServer server;
 
-	@BeforeClass
-	public static void startup() throws Exception
-	{
-		//This sends jersey java util logging to logback
-		SLF4JBridgeHandler.removeHandlersForRootLogger();
-		SLF4JBridgeHandler.install();
+  @Rule
+  public ResourceTestRule resources;
 
-		datastore = new TestDatastore();
-		queuingManager = new QueryQueuingManager(3, "localhost");
+  public MetricsResourceTest() 
+  {
+    try {
+      datastore = new TestDatastore();
+    } catch (DatastoreException e) {}
 
-		Injector injector = Guice.createInjector(new WebServletModule(new Properties()), new AbstractModule()
-		{
-			@Override
-			protected void configure()
-			{
-				bind(Integer.class).annotatedWith(Names.named(WebServer.JETTY_PORT_PROPERTY)).toInstance(9001);
-				bind(String.class).annotatedWith(Names.named(WebServer.JETTY_WEB_ROOT_PROPERTY)).toInstance("bogus");
-				bind(Datastore.class).toInstance(datastore);
-				bind(KairosDatastore.class).in(Singleton.class);
-				bind(AggregatorFactory.class).to(TestAggregatorFactory.class);
-				bind(GroupByFactory.class).to(TestGroupByFactory.class);
-				bind(GsonParser.class).in(Singleton.class);
-				bind(new TypeLiteral<List<DataPointListener>>(){}).toProvider(DataPointListenerProvider.class);
-				bind(QueryQueuingManager.class).toInstance(queuingManager);
-				bindConstant().annotatedWith(Names.named("HOSTNAME")).to("HOST");
-				bindConstant().annotatedWith(Names.named("kairosdb.datastore.concurrentQueryThreads")).to(1);
-			}
-		});
-		server = injector.getInstance(WebServer.class);
-		server.start();
+    queuingManager = new QueryQueuingManager(3, "localhost");
 
-		client = new Client();
-	}
+    Injector injector = Guice.createInjector(new AbstractModule()
+        {
+          @Override
+          protected void configure()
+          {
+            bind(Datastore.class).toInstance(datastore);
+            bind(KairosDatastore.class).in(Singleton.class);
+            bind(AggregatorFactory.class).to(TestAggregatorFactory.class);
+            bind(GroupByFactory.class).to(TestGroupByFactory.class);
+            bind(GsonParser.class).in(Singleton.class);
+            bind(new TypeLiteral<List<DataPointListener>>(){}).toProvider(DataPointListenerProvider.class);
+            bind(QueryQueuingManager.class).toInstance(queuingManager);
+            bindConstant().annotatedWith(Names.named("HOSTNAME")).to("HOST");
+            bindConstant().annotatedWith(Names.named("kairosdb.datastore.concurrentQueryThreads")).to(1);
+          }
+    });
 
-	@AfterClass
-	public static void tearDown() throws Exception
-	{
-		if (server != null)
-		{
-			server.stop();
-		}
-	}
+    resources = ResourceTestRule.builder().addResource(injector
+        .getInstance(MetricsResource.class)).build();
+  }
 
 	@Test
 	public void testAddEmptyBody() throws Exception
 	{
-		JsonResponse response = client.post("", ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, "");
 
 		assertResponse(response, 400, "{\"errors\":[\"Invalid json. No content due to end of input.\"]}");
 	}
@@ -122,7 +110,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("single-metric-long.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 204);
 	}
@@ -132,7 +120,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("single-metric-double.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 204);
 	}
@@ -142,7 +130,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("multiple-datapoints-metric.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 204);
 	}
@@ -152,9 +140,9 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("multi-metric-long.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
-		assertThat(response.getStatusCode(), equalTo(204));
+		assertThat(response.getStatus(), equalTo(204));
 	}
 
 	@Test
@@ -162,7 +150,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("single-metric-missing-name.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 400, "{\"errors\":[\"metric[0].name may not be empty.\"]}");
 	}
@@ -172,7 +160,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("multi-metric-invalid-timestamp.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, ADD_METRIC_URL);
+		ClientResponse response = resources.client().resource(ADD_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 400, "{\"errors\":[\"datapoints.timestamp must be greater than or equal to 1.\"]}");
 	}
@@ -182,7 +170,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("query-metric-absolute-dates.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, GET_METRIC_URL);
+		ClientResponse response = resources.client().resource(GET_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 200,
 				"{\"queries\":" +
@@ -195,7 +183,7 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-relative-unit.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, GET_METRIC_URL);
+		ClientResponse response = resources.client().resource(GET_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 400,
 				"{\"errors\":[\"query.bogus is not a valid time unit, must be one of MILLISECONDS,SECONDS,MINUTES,HOURS,DAYS,WEEKS,MONTHS,YEARS\"]}");
@@ -206,16 +194,16 @@ public class MetricsResourceTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-json.json"), Charsets.UTF_8);
 
-		JsonResponse response = client.post(json, GET_METRIC_URL);
+		ClientResponse response = resources.client().resource(GET_METRIC_URL).post(ClientResponse.class, json);
 
 		assertResponse(response, 400,
-				"{\"errors\":[\"com.google.gson.stream.MalformedJsonException: Expected EOF at line 2 column 21\"]}");
+        "{\"errors\":[\"com.google.gson.stream.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 2 column 22\"]}");
 	}
 
 	@Test
 	public void testMetricNames() throws IOException
 	{
-		JsonResponse response = client.get(METRIC_NAMES_URL);
+		ClientResponse response = resources.client().resource(METRIC_NAMES_URL).get(ClientResponse.class);
 
 		assertResponse(response, 200, "{\"results\":[\"cpu\",\"memory\",\"disk\",\"network\"]}");
 	}
@@ -223,7 +211,7 @@ public class MetricsResourceTest
 	@Test
 	public void testTagNames() throws IOException
 	{
-		JsonResponse response = client.get(TAG_NAMES_URL);
+		ClientResponse response = resources.client().resource(TAG_NAMES_URL).get(ClientResponse.class);
 
 		assertResponse(response, 200, "{\"results\":[\"server1\",\"server2\",\"server3\"]}");
 	}
@@ -231,7 +219,7 @@ public class MetricsResourceTest
 	@Test
 	public void testTagValues() throws IOException
 	{
-		JsonResponse response = client.get(TAG_VALUES_URL);
+		ClientResponse response = resources.client().resource(TAG_VALUES_URL).get(ClientResponse.class);
 
 		assertResponse(response, 200, "{\"results\":[\"larry\",\"moe\",\"curly\"]}");
 	}
@@ -247,12 +235,12 @@ public class MetricsResourceTest
 
 			String json = Resources.toString(Resources.getResource("query-metric-absolute-dates.json"), Charsets.UTF_8);
 
-			JsonResponse response = client.post(json, GET_METRIC_URL);
+			ClientResponse response = resources.client().resource(GET_METRIC_URL).post(ClientResponse.class, json);
 
 			datastore.throwQueryException(null);
 
-			assertThat(response.getStatusCode(), equalTo(500));
-			assertThat(response.getJson(), equalTo("{\"errors\":[\"org.kairosdb.core.exception.DatastoreException: bogus\"]}"));
+			assertThat(response.getStatus(), equalTo(500));
+			assertThat(response.getEntity(String.class), equalTo("{\"errors\":[\"org.kairosdb.core.exception.DatastoreException: bogus\"]}"));
 			assertEquals(3, queuingManager.getAvailableThreads());
 		}
 		finally
@@ -261,18 +249,18 @@ public class MetricsResourceTest
 		}
 	}
 
-	private void assertResponse(JsonResponse response, int responseCode, String expectedContent)
+	private void assertResponse(ClientResponse response, int responseCode, String expectedContent)
 	{
-		assertThat(response.getStatusCode(), equalTo(responseCode));
-		assertThat(response.getHeader("Content-Type"), startsWith("application/json"));
-		assertThat(response.getJson(), equalTo(expectedContent));
+		assertThat(response.getStatus(), equalTo(responseCode));
+		assertThat(response.getHeaders().get("Content-Type").get(0), startsWith("application/json"));
+		assertThat(response.getEntity(String.class), equalTo(expectedContent));
 	}
 
-	private void assertResponse(JsonResponse response, int responseCode)
+	private void assertResponse(ClientResponse response, int responseCode)
 	{
-		assertThat(response.getStatusCode(), equalTo(responseCode));
-		assertThat(response.getHeader("Content-Type"), startsWith("application/json"));
-		assertThat(response.getStatusString(), equalTo("No Content"));
+		assertThat(response.getStatus(), equalTo(responseCode));
+		assertThat(response.getHeaders().get("Content-Type").get(0), startsWith("application/json"));
+		assertThat(response.getClientResponseStatus().getReasonPhrase(), equalTo("No Content"));
 	}
 
 	public static class TestDatastore implements Datastore
@@ -364,5 +352,4 @@ public class MetricsResourceTest
 			return null;
 		}
 	}
-
 }

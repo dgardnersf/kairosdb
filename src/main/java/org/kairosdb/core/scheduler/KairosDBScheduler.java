@@ -15,6 +15,8 @@
  */
 package org.kairosdb.core.scheduler;
 
+import io.dropwizard.lifecycle.Managed;
+
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -32,7 +34,7 @@ import java.util.Properties;
 
 import static org.quartz.JobBuilder.newJob;
 
-public class KairosDBScheduler implements KairosDBService
+public class KairosDBScheduler implements KairosDBService, Managed
 {
 	private static final Logger log = LoggerFactory.getLogger(KairosDBScheduler.class);
 

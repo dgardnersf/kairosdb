@@ -18,6 +18,7 @@ public class KairosMetricReporterListProvider implements Provider<List<KairosMet
 	private List<KairosMetricReporter> m_reporters = new ArrayList<KairosMetricReporter>();
 
 	@Inject
+  @SuppressWarnings("unchecked")
 	public KairosMetricReporterListProvider(Injector injector)
 	{
 		Map<Key<?>, Binding<?>> bindings = injector.getAllBindings();

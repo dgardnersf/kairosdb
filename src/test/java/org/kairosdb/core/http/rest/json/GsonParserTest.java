@@ -462,8 +462,8 @@ public class GsonParserTest
 		}
 		catch (BeanValidationException e)
 		{
-			assertThat(e.getErrorMessages().size(), equalTo(1));
-			assertThat(e.getErrorMessages().get(0), equalTo(expectedMessage));
+			assertThat(e.getErrorMessages().size(), greaterThanOrEqualTo(1));
+			assertThat(e.getErrorMessages(), hasItem(expectedMessage));
 		}
 	}
 }

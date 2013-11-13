@@ -24,7 +24,9 @@ import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
+import java.util.Arrays;
 public class MetricTest
 {
 	@Test
@@ -34,8 +36,8 @@ public class MetricTest
 		Set<ConstraintViolation<Metric>> violations = BeanValidationHelper.VALIDATOR.validate(metric);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.size(), equalTo(1));
-		assertThat(violationMessages.get(0), equalTo("name may not be null"));
+		assertThat(violationMessages.size(), equalTo(2));
+		assertThat(violationMessages, containsInAnyOrder("name may not be null", "name may not be empty"));
 	}
 
 	@Test
@@ -56,8 +58,9 @@ public class MetricTest
 		Set<ConstraintViolation<Metric>> violations = BeanValidationHelper.VALIDATOR.validate(metric);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.size(), equalTo(1));
-		assertThat(violationMessages.get(0), equalTo("aggregate may not be null"));
+		assertThat(violationMessages.size(), equalTo(2));
+		assertThat(violationMessages, containsInAnyOrder("aggregate may not be null", 
+          "aggregate may not be empty"));
 	}
 
 	@Test

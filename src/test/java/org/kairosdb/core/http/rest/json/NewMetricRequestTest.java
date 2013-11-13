@@ -25,6 +25,7 @@ import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class NewMetricRequestTest
 {
@@ -36,8 +37,8 @@ public class NewMetricRequestTest
 		Set<ConstraintViolation<NewMetricRequest>> violations = BeanValidationHelper.VALIDATOR.validate(request);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.size(), equalTo(1));
-		assertThat(violationMessages.get(0), equalTo("name may not be null"));
+		assertThat(violationMessages.size(), equalTo(2));
+		assertThat(violationMessages, containsInAnyOrder("name may not be empty", "name may not be null"));
 
 	}
 
@@ -63,8 +64,9 @@ public class NewMetricRequestTest
 		Set<ConstraintViolation<NewMetricRequest>> violations = BeanValidationHelper.VALIDATOR.validate(request);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.size(), equalTo(1));
-		assertThat(violationMessages.get(0), equalTo("datapoints[0].value may not be null"));
+		assertThat(violationMessages.size(), equalTo(2));
+		assertThat(violationMessages, containsInAnyOrder( "datapoints[0].value may not be null",
+          "datapoints[0].value may not be empty"));
 
 	}
 

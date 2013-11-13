@@ -15,11 +15,14 @@
  */
 package org.kairosdb.core.groupby;
 
-import org.json.JSONException;
-import org.json.JSONWriter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+
 import org.kairosdb.core.formatter.FormatterException;
 
 import java.io.StringWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +32,7 @@ public class TagGroupByResult implements GroupByResult
 {
 	private Map<String, String> tagResults = new HashMap<String, String>();
 	private TagGroupBy groupBy;
+  private JsonFactory jsonFactory = new JsonFactory();
 
 	public TagGroupByResult(TagGroupBy groupBy, Map<String, String> tagResults)
 	{
@@ -45,31 +49,41 @@ public class TagGroupByResult implements GroupByResult
 	public String toJson() throws FormatterException
 	{
 		StringWriter stringWriter = new StringWriter();
-		JSONWriter writer = new JSONWriter(stringWriter);
 
-		try
-		{
-			writer.object();
-			writer.key("name").value("tag");
-			writer.key("tags").array();
-			for (String name : groupBy.getTagNames())
-			{
-				writer.value(name);
-			}
-			writer.endArray();
+    try
+    {
+      JsonGenerator writer = jsonFactory.createGenerator(stringWriter);
+      writer.writeStartObject();
+      writer.writeFieldName("name");
+      writer.writeString("tag");
+      writer.writeFieldName("tags");
+      writer.writeStartArray();
+      for (String name : groupBy.getTagNames())
+      {
+        writer.writeString(name);
+      }
+      writer.writeEndArray();
 
-			writer.key("group").object();
-			for (String tagName : tagResults.keySet())
-			{
-				writer.key(tagName).value(tagResults.get(tagName));
-			}
-			writer.endObject();
-			writer.endObject();
-		}
-		catch (JSONException e)
-		{
-			throw new FormatterException(e);
-		}
-		return stringWriter.toString();
+      writer.writeFieldName("group");
+      writer.writeStartObject();
+      for (String tagName : tagResults.keySet())
+      {
+        writer.writeFieldName(tagName);
+        writer.writeString(tagResults.get(tagName));
+      }
+      writer.writeEndObject();
+      writer.writeEndObject();
+      writer.flush();
+    }
+    catch (JsonGenerationException e)
+    {
+      throw new FormatterException(e);
+    }
+    catch (IOException e)
+    {
+      throw new FormatterException(e);
+    }
+
+    return stringWriter.toString();
 	}
 }

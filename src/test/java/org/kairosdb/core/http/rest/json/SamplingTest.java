@@ -22,6 +22,7 @@ import javax.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -78,8 +79,9 @@ public class SamplingTest
 		Set<ConstraintViolation<Sampling>> violations = BeanValidationHelper.VALIDATOR.validate(sampling);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.size(), equalTo(1));
-		assertThat(violationMessages.get(0), equalTo("aggregate may not be null"));
+		assertThat(violationMessages.size(), equalTo(2));
+		assertThat(violationMessages, containsInAnyOrder("aggregate may not be null",
+            "aggregate may not be empty"));
 	}
 
 	@Test

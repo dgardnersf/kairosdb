@@ -24,17 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
+import org.kairosdb.core.KairosDBConfiguration;
+
 public class TelnetServerModule extends AbstractModule
 {
 	public static final Logger logger = LoggerFactory.getLogger(TelnetServerModule.class);
-
-	private Properties m_props;
-
-
-	public TelnetServerModule(Properties props)
-	{
-		m_props = props;
-	}
 
 	@Override
 	protected void configure()
